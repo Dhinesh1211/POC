@@ -53,6 +53,29 @@ var zoneBounds = array.new_float(resolution, 0) // array that stores the highest
 var line[] pocLines = array.new_line(0)
 var float[] pocLevels = array.new_float(0)
 var bool[] pocOpen = array.new_bool(0)
+var int[] pocAge = array.new_int(0)
+var color[] pocColors = array.new_color(0)
+
+getPocColor(age) =>
+    switch age
+        0 => color.yellow
+        1 => color.orange
+        => color.red
+
+agePocs() =>
+    for i = array.size(pocLines) - 1 to 0
+        int age = array.get(pocAge, i) + 1
+        if age >= 3
+            line.delete(array.get(pocLines, i))
+            array.remove(pocLines, i)
+            array.remove(pocLevels, i)
+            array.remove(pocOpen, i)
+            array.remove(pocAge, i)
+            array.remove(pocColors, i)
+        else
+            array.set(pocAge, i, age)
+            col = getPocColor(age)
+            array.set(pocColors, i, col)
 
 //Values to store current intra bar data
 var float[] ltfOpen =  array.new_float(0)
@@ -191,6 +214,7 @@ valueLevels(poc) =>
 
 drawNewZone(update) =>
     if bar_index > lookback and update and array.sum(vpGreen) + array.sum(vpRed) > 0
+        agePocs()
         gap = (profHigh - profLow) / resolution
         float leftMax = bar_index[lookback]
         float rightMax = bar_index[int(lookback / 1.4)]
@@ -215,10 +239,12 @@ drawNewZone(update) =>
         poc = pocLevel()
         [val, vah] = valueLevels(poc)
         if showPoc
-            l = line.new(int(leftMax), poc, bar_index-1, poc, color=pocCol, width=pocWid)
+            l = line.new(bar_index, poc, bar_index, poc, color=getPocColor(0), width=pocWid)
             array.push(pocLines, l)
             array.push(pocLevels, poc)
             array.push(pocOpen, true)
+            array.push(pocAge, 0)
+            array.push(pocColors, getPocColor(0))
         if showVA
             line.new(int(leftMax), vah, bar_index-1, vah, color=vahCol, width=vahWid)
             line.new(int(leftMax), val, bar_index-1, val, color=valCol, width=valWid)
@@ -415,13 +441,14 @@ if array.size(pocLines) > 0
         line pline = array.get(pocLines, i)
         float level = array.get(pocLevels, i)
         bool isOpen = array.get(pocOpen, i)
+        color col = array.get(pocColors, i)
         bool crossed = ta.cross(ema5, level)
         if isOpen
             line.set_x2(pline, bar_index)
             if crossed
                 array.set(pocOpen, i, false)
                 line.set_x2(pline, bar_index)
-        line.set_color(pline, (isOpen or showClosedPoc) ? pocCol : color.new(pocCol, 100))
+        line.set_color(pline, (isOpen or showClosedPoc) ? col : color.new(col, 100))
 
 if endLondon and isForex
     drawForexBox(londonStart, 'London', londonHigh, londonLow)
