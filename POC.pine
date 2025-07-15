@@ -410,17 +410,18 @@ nyLow = ta.lowest(low, bar_index-nyStart+1)
 // POC extension and closing logic
 //==========================
 float ema5 = ta.ema(close, 5)
-for i = 0 to array.size(pocLines) - 1
-    line pline = array.get(pocLines, i)
-    float level = array.get(pocLevels, i)
-    bool isOpen = array.get(pocOpen, i)
-    bool crossed = ta.cross(ema5, level)
-    if isOpen
-        line.set_x2(pline, bar_index)
-        if crossed
-            array.set(pocOpen, i, false)
+if array.size(pocLines) > 0
+    for i = 0 to array.size(pocLines) - 1
+        line pline = array.get(pocLines, i)
+        float level = array.get(pocLevels, i)
+        bool isOpen = array.get(pocOpen, i)
+        bool crossed = ta.cross(ema5, level)
+        if isOpen
             line.set_x2(pline, bar_index)
-    line.set_color(pline, (isOpen or showClosedPoc) ? pocCol : color.new(pocCol, 100))
+            if crossed
+                array.set(pocOpen, i, false)
+                line.set_x2(pline, bar_index)
+        line.set_color(pline, (isOpen or showClosedPoc) ? pocCol : color.new(pocCol, 100))
 
 if endLondon and isForex
     drawForexBox(londonStart, 'London', londonHigh, londonLow)
